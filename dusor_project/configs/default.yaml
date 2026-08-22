@@ -1,0 +1,65 @@
+# =============================================================================
+# Default simulation configuration for the DU-SOR Optical MIMO project.
+# Values are taken directly from Appendix A of the thesis
+# "Enhanced Low-Complexity Signal Detection in Large-Scale Optical MIMO Systems".
+# =============================================================================
+
+system:
+  K: 64                     # Square MIMO size (Nt = Nr = K). Thesis sweeps 32, 64, 128.
+  modulation: 4             # M-ary PAM order (4-PAM or 8-PAM in the thesis)
+  snr_db_range: [0, 25]     # SNR sweep range used for BER/BLER curves (A.1)
+  snr_db_points: 6          # Number of SNR points to evaluate (0,5,10,15,20,25)
+
+channel:
+  type: vlc                 # 'vlc' or 'fso'
+
+  vlc:                      # Appendix A.2 - VLC channel parameters (indoor)
+    room_dims_m: [5.0, 5.0, 3.0]      # Length x Width x Height
+    lambertian_order: 1               # m, semi-angle 60 degrees
+    photodetector_area_cm2: 1.0       # A_r
+    optical_filter_gain: 1.0          # T_s
+    concentrator_gain: 1.0            # g
+    wall_reflectivity: 0.8            # for diffuse multipath component
+
+  fso:                       # Appendix A.3 - FSO channel parameters (outdoor)
+    link_distance_km: 1.0
+    wavelength_nm: 1550
+    attenuation_db_per_km: 0.2
+    turbulence_model: gamma_gamma      # 'lognormal' (weak) or 'gamma_gamma' (moderate/strong)
+    gamma_gamma_params:
+      moderate: [4.0, 1.9]             # (alpha, beta)
+      strong: [2.0, 1.8]
+    turbulence_strength: moderate      # 'moderate' or 'strong'
+    pointing_error_jitter_mrad: [0.1, 0.6]   # sampled uniformly in this range per link
+
+noise:                       # Appendix A.4 - Noise model parameters
+  electron_charge_C: 1.6e-19
+  responsivity_A_per_W: 0.6
+  bandwidth_Hz: 1.0e+9
+  boltzmann_J_per_K: 1.38e-23
+  temperature_K: 300
+  load_resistance_ohm: 50
+
+training:                    # Appendix A.5 - DU-SOR network training parameters
+  num_layers: 10             # L. Ablation sweeps 2, 5, 10, 15, 20.
+  train_samples: 100000
+  val_samples: 20000
+  test_samples: 20000
+  batch_size: 512
+  optimizer: adam
+  learning_rate: 0.001
+  lr_scheduler: plateau      # decay learning rate on validation-loss plateau
+  loss: mse
+  epochs: 100
+  early_stopping_patience: 10
+  seed: 42
+
+sor:
+  omega: 1.5                # empirically tuned fixed relaxation factor for classical SOR
+  max_iterations: 50
+  tolerance: 1.0e-6
+
+benchmark:
+  detectors: [ml, zf, mmse, gs, sor, du_sor]
+  ml_max_K: 4                # ML brute-force is only tractable for very small K
+  device: cuda               # falls back to CPU automatically if unavailable
